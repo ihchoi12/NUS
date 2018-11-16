@@ -118,24 +118,23 @@ attacker_hosts = prep_ip_address(attacker_ip_range_file)
 decoy_hosts = []
 decoy_as_file = "./decoy-as/"+str(victimAS)+"/"+str(victimAS)+"-"+str(attackerAS)+".txt"
 decoy_as_list = prep_decoy_as(decoy_as_file)
-for q in range (100) :
-	for asn in decoy_as_list:
-	    ip_range_file = "./config/asn-to-ip/"+str(asn)+".txt"
-	    if not os.path.isfile(ip_range_file):
-	        continue #just ignore for now
-	    hosts = prep_ip_address(ip_range_file)
-	    decoy_hosts += hosts
+inserted_decoy_ips = []
+for asn in decoy_as_list:
+    ip_range_file = "./config/asn-to-ip/"+str(asn)+".txt"
+    if not os.path.isfile(ip_range_file):
+        continue #just ignore for now
+    hosts = prep_ip_address(ip_range_file)
+    decoy_hosts += hosts
 
-	decoy_16_network = []
-	for host in decoy_hosts:
-	    if host.network.prefixlen < 16:
-	        for network in list(host.network.subnets(new_prefix=16)):
-	            decoy_16_network += [network]
-	    else:
-	        decoy_16_network += [host.network]
+decoy_16_network = []
+for host in decoy_hosts:
+    if host.network.prefixlen < 16:
+        for network in list(host.network.subnets(new_prefix=16)):
+            decoy_16_network += [network]
+    else:
+        decoy_16_network += [host.network]
 
-
-
+for q in range (3749) :
 	src_ip = get_random_ip(decoy_16_network) # choose a random attacker ip address
 	out = open("./attack_resource/"+ str(src_ip) +".txt", "w")
 	print(src_ip)
@@ -143,10 +142,11 @@ for q in range (100) :
 
 	#choose 1000 random decoy IP address
 	selected_decoy_ips = []
-	for i in range(1000):
+	for i in range(100):
 	    decoy_ip = get_random_ip(decoy_16_network)
-	    # while decoy_ip in inserted_decoy_ips:
-	    #     decoy_ip = get_random_ip(decoy_16_network)
+	    while decoy_ip in inserted_decoy_ips:
+	        decoy_ip = get_random_ip(decoy_16_network)
+	    inserted_decoy_ips += [decoy_ip]
 	    selected_decoy_ips += [decoy_ip]
 	    out.write(str(decoy_ip) + '\n')
 	    print(str(decoy_ip) + '\n')

@@ -20,6 +20,7 @@ def add_icmp_rules() :
 def add_tcp_rules() :
 	path_dir = './attack_resource/'
 	file_list = os.listdir(path_dir)
+	file_list.sort()
 	port = 49152
 	print(file_list)
 	
@@ -35,7 +36,7 @@ def add_tcp_rules() :
 
 		port += 1
 		
-
+out.write("sudo ovs-ofctl del-flows br0 table=0" + '\n')
 add_arp_rules()
 add_icmp_rules()
 add_tcp_rules()
