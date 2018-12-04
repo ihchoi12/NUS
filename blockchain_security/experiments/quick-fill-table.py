@@ -126,13 +126,25 @@ for asn in decoy_as_list:
     hosts = prep_ip_address(ip_range_file)
     decoy_hosts += hosts
 
-decoy_16_network = []
+
+
+decoy_16_network = set()
+#print(type(decoy_hosts[0]))
 for host in decoy_hosts:
+
     if host.network.prefixlen < 16:
+        #print(host.network)
         for network in list(host.network.subnets(new_prefix=16)):
-            decoy_16_network += [network]
+            #print("*" + str(network))
+            decoy_16_network.add(network)
     else:
-        decoy_16_network += [host.network]
+        decoy_16_network.add(host.network)
+
+    #if host.network.prefixlen == 24 :
+    #    if (str(host.network).split('.')[3]).split('/')[0] != '0' :
+    #        print((str(host.network).split('.')[3]).split('/')[0])
+#print(decoy_16_network)
+
 
 for q in range (3749) :
 	src_ip = get_random_ip(decoy_16_network) # choose a random attacker ip address
