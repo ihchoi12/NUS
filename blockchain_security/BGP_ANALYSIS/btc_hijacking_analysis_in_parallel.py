@@ -32,7 +32,7 @@ announcements = bgpdump(bgp_raw_file_name)
 #print (announcements[0])
 
 
-btc_ip_file = "/data/BGP_LOG/bitnodes_last_60days/all_ip.txt"
+btc_ip_file = "/data/BGP_LOG/bitnodes_last_60days/port_removed/all"
 with open(btc_ip_file) as f:
     content = f.readlines()
 btc_ip_list = [x.strip() + ":8333" for x in content]
