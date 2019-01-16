@@ -32,7 +32,7 @@ announcements = bgpdump(bgp_raw_file_name)
 #print (announcements[0])
 
 
-btc_ip_file = "/data/BGP_LOG/bitnodes_last_60days/port_removed/all"
+btc_ip_file = "/data/BGP_LOG/bitnodes_last_60days/per_day_superset_of_btc_ipaddr/superset_" + date + ".txt"
 with open(btc_ip_file) as f:
     content = f.readlines()
 btc_ip_list = [x.strip() + ":8333" for x in content]
@@ -58,7 +58,7 @@ for btc_ip in btc_ip_list:
 
 
 
-result_path = "/data/BGP_LOG/hijacking_include_BTC/" + date + "/" + date + collector + timestamp
+result_path = "/data/BGP_LOG/hijacking_include_BTC/analysis_with_oneday_superset/" + date + "/" + date + collector + timestamp
 result_file = open(result_path, 'w')
 
 
