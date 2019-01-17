@@ -1,5 +1,10 @@
 Process
 
+0. RIS-DATA preparation
+		- rrc_download_duration.py / rrc.sh / download.sh:
+		They will download all the RIS data(rrc00~rrc23) for the offered duration.
+
+
 1. Data generation.
         - btc_hijacking_analysis_in_parallel.py :
         Handle rrc raw data and summarize announcements including BTC ip address only
