@@ -13,7 +13,7 @@ import ipaddress
 start = time.time()
 
 
-prefix_data_path = "/data/BGP_LOG/AS-prefix-dataset/prefix-superset/prefix_for_each_ASN/"
+prefix_data_path = "/data/BGP_LOG/AS-prefix-dataset/prefix-superset/supernet_for_bigger_only/"
 peering_data_path = "/data/BGP_LOG/AS_RELATIONSHIP_DATA/peer_data/peering_for_each_ASN/"
 
 def is_subnet_of(a, b):
@@ -31,19 +31,7 @@ def prefix_ownership_check(prefix, asn) :
         content = f.readlines()
     prefix_set = {x.strip() for x in content}
     for prefix_str in prefix_set :
-        if(':' in prefix_str) :
-            #if(':' not in prefix) : continue
-            prefix_real = ipaddress.ip_network(prefix_str, strict=False)
-            prefix_real = prefix_real.supernet(new_prefix=prefix_real.prefixlen-2)
-        else :
-            #if('.' not in prefix) : continue
-            prefix_str = prefix_str.split(".")[0] + "." + prefix_str.split(".")[1] + ".0.0/" + prefix_str.split("/")[1]
-            prefix_real = ipaddress.ip_network(prefix_str)
-            if(prefix_real.prefixlen > 16) :
-                prefix_real = prefix_real.supernet(new_prefix=16)
-            else :
-                prefix_real = prefix_real.supernet(new_prefix=prefix_real.prefixlen-1)
-    
+        prefix_real = ipaddress.ip_network(prefix_str) 
         if(is_subnet_of(prefix, prefix_real)) :
             return True
     return False
@@ -89,7 +77,8 @@ for date in date_list :
     cnt = 0
     for raw_line in raw_line_list :
         cnt+=1
-        print(str(cnt) + " : " + raw_line)
+        print(cnt)
+        #print(str(cnt) + " : " + raw_line)
         if("BGP4MP" not in raw_line) : continue
         if(',' in raw_line) : continue
         if('_' in raw_line) : continue
@@ -108,7 +97,7 @@ for date in date_list :
                 key_str = raw_prefix_str + "-" + AS_path_str
         # to save previous fixed result ==> will be used to check following cases quickly
         if(key_str in fixed_results_dict.keys()) :
-            print("hi")
+            #print("hi")
             if(fixed_results_dict[key_str] != "X") :
                 result.write(raw_line + " type_" + fixed_results_dict[key_str] + '\n')
             continue
