@@ -12,8 +12,9 @@ import ipaddress
 
 start = time.time()
 
+which_hour = sys.argv[1]
 
-prefix_data_path = "/data/BGP_LOG/AS-prefix-dataset/prefix-superset/supernet_for_bigger_only/"
+prefix_data_path = "/data/BGP_LOG/AS-prefix-dataset/prefix-superset/pre_processed_superset/"
 peering_data_path = "/data/BGP_LOG/AS_RELATIONSHIP_DATA/peer_data/peering_for_each_ASN/"
 
 def is_subnet_of(a, b):
@@ -27,16 +28,61 @@ def is_subnet_of(a, b):
     return a_len >= b_len and a.supernet(a_len - b_len) == b
 
 def prefix_ownership_check(prefix, asn) :
-    with open(prefix_data_path + asn + ".txt") as f :
-        content = f.readlines()
-    prefix_set = {x.strip() for x in content}
-    for prefix_str in prefix_set :
-        prefix_real = ipaddress.ip_network(prefix_str) 
-        if(is_subnet_of(prefix, prefix_real)) :
-            return True
+    
+    global asn_prefix_dict
+    
+    if(asn not in asn_prefix_dict.keys()) :
+        asn_prefix_dict[asn] = dict()
+        with open(prefix_data_path + asn + ".txt") as f :
+            content = f.readlines()
+        prefix_set = {x.strip() for x in content}
+        for i in prefix_set :
+            prefix_header = ""
+            if '.' in i :
+                if(int(i.split('/')[1]) < 16) :
+                    prefix_header = "big_prefix"
+                else :
+                    prefix_header = i[0:i.index('.', i.index('.') + 1) + 1]
+            elif ':' in i :
+                if(int(i.split('/')[1]) < 32) :
+                    prefix_header = "big_prefix"
+                else :
+                    prefix_header = i[0:i.index(':', i.index(':') + 1) + 1]
+                    if(prefix_header.split(':')[1] == '') :
+                        prefix_header = prefix_header.split(':')[0] + ":0:" 
+            if(prefix_header not in asn_prefix_dict[asn].keys()) :
+                asn_prefix_dict[asn][prefix_header] = set()
+            prefix_real = ipaddress.ip_network(i)
+            asn_prefix_dict[asn][prefix_header].add(prefix_real)        
+    
+    announced_prefix = ipaddress.ip_network(prefix)
+    
+
+
+    prefix_header = "big_prefix"
+    if(prefix_header in asn_prefix_dict[asn].keys()) :
+        for prefix_str in asn_prefix_dict[asn][prefix_header] :
+            prefix_real = ipaddress.ip_network(prefix_str) 
+            if(is_subnet_of(announced_prefix, prefix_real)) :
+                return True
+
+    prefix_header = ""
+    if '.' in prefix:
+        prefix_header = prefix[0:prefix.index('.', prefix.index('.') + 1) + 1]
+        if(int(prefix.split('/')[1]) < 16) : return False
+    elif ':' in prefix:
+        prefix_header = prefix[0:prefix.index(':', prefix.index(':') + 1) + 1]
+        if(int(prefix.split('/')[1]) < 32) : return False
+    if(prefix_header in asn_prefix_dict[asn].keys()) : 
+        return True
+
+    #for prefix_str in asn_prefix_dict[asn][prefix_header] :
+    #    prefix_real = ipaddress.ip_network(prefix_str) 
+    #    if(is_subnet_of(announced_prefix, prefix_real)) :
+    #        return True
     return False
 
-
+asn_prefix_dict = dict()
 
 all_asn_path = "/data/BGP_LOG/all-asn.txt"
 with open(all_asn_path) as f :
@@ -53,8 +99,8 @@ def daterange(date1, date2):
     for n in range(int ((date2 - date1).days)+1):
         yield date1 + timedelta(n)
 
-start_dt = date(2018, 11, 1)
-end_dt = date(2018, 11, 1)
+start_dt = date(2018, 11, 2)
+end_dt = date(2018, 11, 2)
 for dt in daterange(start_dt, end_dt):
     date_list.append(dt.strftime("%Y%m%d"))
 
@@ -63,11 +109,11 @@ for date in date_list :
 
 
 
-    result_path = "/data/BGP_LOG/raw_data_analysis/result/raw_Ntype_" + date + ".txt"
-    result = open(result_path, 'w')
+    result_path = "/data/BGP_LOG/raw_data_analysis_3/result/Ntype_raw_" + date + ".txt"
+    result = open(result_path, "a+")
 
     #ris_data_path = "/data/BGP_LOG/hijacking_include_BTC/" + date + "/" + "20181022ALL1800"
-    ris_data_path = "/data/BGP_LOG/raw_data_analysis/merged_raw_remove_redundancy_" + date + ".txt"
+    ris_data_path = "/data/BGP_LOG/raw_data_analysis_3/" + date + "/" + date + "_" + which_hour + ".txt"
     with open(ris_data_path) as f :
         content = f.readlines()
     raw_line_list = [x.strip() for x in content]
@@ -127,8 +173,8 @@ for date in date_list :
             continue # last AS not in the ASN set.. ignore
 
         if(lastAS[0]+"_"+raw_prefix_str not in not_type_0_set) :
-            raw_prefix = ipaddress.ip_network(raw_prefix_str)
-            if(prefix_ownership_check(raw_prefix, lastAS[0])) : # last AS own the prefix.. not Hijacking
+            #raw_prefix = ipaddress.ip_network(raw_prefix_str)
+            if(prefix_ownership_check(raw_prefix_str, lastAS[0])) : # last AS own the prefix.. not Hijacking
                 not_type_0_set.add(lastAS[0]+"_"+raw_prefix_str) # add to the not type_0 set.. to save time afterwards
                 HJ_type = -1
             if(HJ_type == 0) :
@@ -156,8 +202,8 @@ for date in date_list :
         peers_set = {x.strip() for x in content}
         if(asn2 not in peers_set) : # No peering relation between 'the last ASN' and '2nd last ASN' 
             if(lastAS[1]+"_"+raw_prefix_str not in not_type_0_set) :
-                raw_prefix = ipaddress.ip_network(raw_prefix_str)
-                if(prefix_ownership_check(raw_prefix, lastAS[1])) : # 2nd last AS own the prefix.. not type_1
+                #raw_prefix = ipaddress.ip_network(raw_prefix_str)
+                if(prefix_ownership_check(raw_prefix_str, lastAS[1])) : # 2nd last AS own the prefix.. not type_1
                     not_type_0_set.add(lastAS[1]+"_"+raw_prefix_str) # add to the not type_0 set.. to save time afterwards
                     HJ_type = -1
                 if(HJ_type == 1) :
@@ -185,8 +231,8 @@ for date in date_list :
         peers_set = {x.strip() for x in content}
         if(asn2 not in peers_set) : # No peering relation between '2nd last ASN' and '3rd last ASN' 
             if(lastAS[2]+"_"+raw_prefix_str not in not_type_0_set) :
-                raw_prefix = ipaddress.ip_network(raw_prefix_str)
-                if(prefix_ownership_check(raw_prefix, lastAS[2])) : # 3rd last AS own the prefix.. not type_2
+                #raw_prefix = ipaddress.ip_network(raw_prefix_str)
+                if(prefix_ownership_check(raw_prefix_str, lastAS[2])) : # 3rd last AS own the prefix.. not type_2
                     not_type_0_set.add(lastAS[2]+"_"+raw_prefix_str) # add to the not type_0 set.. to save time afterwards
                     HJ_type = -1
                 if(HJ_type == 2) :
@@ -213,8 +259,8 @@ for date in date_list :
         peers_set = {x.strip() for x in content}
         if(asn2 not in peers_set) : # No peering relation between '3rd last ASN' and '4th last ASN' 
             if(lastAS[3]+"_"+raw_prefix_str not in not_type_0_set) :
-                raw_prefix = ipaddress.ip_network(raw_prefix_str)
-                if(prefix_ownership_check(raw_prefix, lastAS[3])) : # 4th last AS own the prefix.. not type_3
+                #raw_prefix = ipaddress.ip_network(raw_prefix_str)
+                if(prefix_ownership_check(raw_prefix_str, lastAS[3])) : # 4th last AS own the prefix.. not type_3
                     not_type_0_set.add(lastAS[3]+"_"+raw_prefix_str) # add to the not type_0 set.. to save time afterwards
                     HJ_type = -1
                 if(HJ_type == 3) :
@@ -224,9 +270,9 @@ for date in date_list :
                     continue
         fixed_results_dict[key_str] = "X"
 
-    print(timestamp + " is done!!!")
+    print(date + "_" + which_hour + " : is done!!!")
     result.close()
-    print(fixed_results_dict)
+    #print(fixed_results_dict)
 
 end = time.time()
 print(end - start)
